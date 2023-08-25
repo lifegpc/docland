@@ -42,6 +42,10 @@ type ImgRoutes =
 const RE_STD = /^std(?:@([^/]+))?/;
 const RE_X_PKG = /^x\/([a-zA-Z0-9-_.]{3,})(?:@([^/]+))?/;
 
+const importMaps: Record<string, string> = {
+    "lifegpc/eh-downloader": "/import_map.json"
+}
+
 function isPackageHost(host: string): boolean {
   return host.toLowerCase() === "deno.land";
 }
@@ -150,7 +154,17 @@ export const pathGetHead = async <R extends DocRoutes>(
     );
   }
   await maybeCacheStatic(url, host);
-  let importMap;
+  let importMap: string | undefined;
+  if (host == "raw.githubusercontent.com") {
+    for (const i in importMaps) {
+        if (path.startsWith(i)) {
+            const paths = path.split("/");
+            if (paths.length >= 3) {
+                importMap = `${proto}/${host}/${i}/${paths[2]}${importMaps[i]}`
+            }
+        }
+    }
+  }
   const entries = await getEntries(url, importMap);
   store.setState({ entries, url, includePrivate: proto === "deno" });
   sheet.reset();
